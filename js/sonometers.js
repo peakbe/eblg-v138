@@ -81,7 +81,7 @@ function renderSonoList() {
 
 function renderSonoMarkers() {
     SONOMETERS.forEach(s => {
-        const marker = L.marker([s.lat, s.lon]).addTo(mapRef);
+        const marker = L.marker([s.lat, s.lon], { icon: sonoIcon }).addTo(mapRef);
 
         marker.bindPopup(`
             <b>${s.id}</b><br>
@@ -91,6 +91,11 @@ function renderSonoMarkers() {
         marker.on("click", () => showDetail(s));
     });
 }
+const sonoIcon = L.icon({
+    iconUrl: "./assets/icons/sono-atc.png",
+    iconSize: [32, 32],
+    iconAnchor: [16, 16]
+});
 
 // ============================
 // 3) Panneau détail
