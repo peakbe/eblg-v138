@@ -1,22 +1,16 @@
 // =========================
-// APP.JS PRO+ (VERSION CORRIGÉE)
+// APP.JS PRO+ (VERSION FINALE)
 // =========================
 
 import { initMap } from "./map.js";
-import "./helpers.js";
-import "./metar.js";
-import "./taf.js";
-import "./fids.js";
-import "./sonometers.js";
+import { safeLoadMetar } from "./metar.js";
+import { safeLoadTaf } from "./taf.js";
+import { safeLoadFids } from "./fids.js";
+import { loadSonometers, toggleHeatmap } from "./sonometers.js";
 
 import { updateStatusPanel } from "./status.js";
 import { updateLogs } from "./logs.js";
 import { startLiveLogs } from "./logsLive.js";
-import { toggleHeatmap } from "./sonometers.js";
-
-document.getElementById("toggle-heatmap").addEventListener("click", () => {
-    toggleHeatmap(window._map);
-});
 
 // ============================
 // INITIALISATION UNIQUE
@@ -26,16 +20,21 @@ document.addEventListener("DOMContentLoaded", () => {
     console.log("[APP] Initialisation…");
 
     const map = initMap();
-
     if (!map) {
         console.error("[APP ERROR] La carte n'a pas pu être initialisée.");
         return;
     }
     window._map = map;
 
-    console.log("[APP] Carte prête. Modules chargés.");
-    
-    // Modules de monitoring
+    console.log("[APP] Carte prête. Chargement des modules…");
+
+    // Chargement des modules
+    safeLoadMetar();
+    safeLoadTaf();
+    safeLoadFids();
+    loadSonometers();
+
+    // Monitoring
     updateStatusPanel();
     updateLogs();
     startLiveLogs();
@@ -50,4 +49,12 @@ const toggle = document.getElementById("sidebar-toggle");
 
 toggle.addEventListener("click", () => {
     sidebar.classList.toggle("collapsed");
+});
+
+// ============================
+// HEATMAP BUTTON
+// ============================
+
+document.getElementById("toggle-heatmap").addEventListener("click", () => {
+    toggleHeatmap(window._map);
 });
