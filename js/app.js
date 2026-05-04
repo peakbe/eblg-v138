@@ -1,16 +1,18 @@
 // =========================
-// APP.JS PRO+ (VERSION FINALE)
+// APP.JS PRO+ (VERSION HARMONISÉE)
 // =========================
 
 import { initMap } from "./map.js";
+
 import { safeLoadMetar } from "./metar.js";
 import { safeLoadTaf } from "./taf.js";
 import { safeLoadFids } from "./fids.js";
+
 import { loadSonometers, toggleHeatmap } from "./sonometers.js";
 
-import { updateStatusPanel } from "./status.js";
-import { loadLogs } from "./logs.js";
-import { startLiveLogs } from "./logsLive.js";
+import { checkApiStatus } from "./status.js";   // ✔ Harmonisé
+import { loadLogs } from "./logs.js";           // ✔ Harmonisé
+import { startLiveLogs } from "./logsLive.js";  // ✔ Harmonisé
 
 // ============================
 // INITIALISATION UNIQUE
@@ -35,9 +37,9 @@ document.addEventListener("DOMContentLoaded", () => {
     loadSonometers();
 
     // Monitoring
-    updateStatusPanel();
-    loadLogs();
-    startLiveLogs();;
+    checkApiStatus();   // ✔ Remplace updateStatusPanel()
+    loadLogs();         // ✔ Remplace updateLogs()
+    startLiveLogs();
 });
 
 // ============================
@@ -58,3 +60,4 @@ toggle.addEventListener("click", () => {
 document.getElementById("toggle-heatmap").addEventListener("click", () => {
     toggleHeatmap(window._map);
 });
+
