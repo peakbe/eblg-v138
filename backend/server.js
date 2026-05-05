@@ -27,7 +27,7 @@ app.use(cors({
 const cache = {
     metar: { ts: 0, data: null },
     taf: { ts: 0, data: null },
-    fids: { ts: 0, data: null }
+
 };
 
 function getCache(key, ttl = 60000) {
