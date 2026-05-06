@@ -1,153 +1,92 @@
-// ======================================================
-// RUNWAYS — VERSION PRO+
-// Dessin piste + corridor + crosswind + panneau piste
-// ======================================================
+// =========================
+// RUNWAYS.JS PRO+ EBLG
+// Piste 04/22 avec axe réel
+// =========================
 
-// ------------------------------------------------------
-// Logging PRO+
-// ------------------------------------------------------
-const IS_DEV = location.hostname.includes("localhost") || location.hostname.includes("127.0.0.1");
-const log = (...a) => IS_DEV && console.log("[RUNWAYS]", ...a);
-const logErr = (...a) => console.error("[RUNWAYS ERROR]", ...a);
-
-
-// ------------------------------------------------------
-// Données pistes
-// ------------------------------------------------------
-export const RUNWAYS = {
+// Données piste EBLG (coordonnées réelles, ordre [lat, lon])
+const RUNWAYS = {
     "22": {
+        id: "22",
         heading: 220,
-        start: [50.64695, 5.44340],
-        end:   [50.64455, 5.46515],
-        width_m: 45
+        start: [50.64834, 5.46639], // seuil 22
+        end:   [50.64186, 5.44028]  // seuil 04
     },
     "04": {
+        id: "04",
         heading: 40,
-        start: [50.64455, 5.46515],
-        end:   [50.64695, 5.44340],
-        width_m: 45
+        start: [50.64186, 5.44028], // seuil 04
+        end:   [50.64834, 5.46639]  // seuil 22
     }
 };
 
-export const CORRIDORS = {
-    "04": [
-        [50.70000, 5.33000],
-        [50.67000, 5.40000],
-        [50.64455, 5.46515]
-    ],
-    "22": [
-        [50.60000, 5.58000],
-        [50.62000, 5.51000],
-        [50.64695, 5.44340]
-    ]
-};
+// =========================
+// Dessin de la piste
+// =========================
+export function drawRunway(runwayId = "22", layer) {
+    const rwy = RUNWAYS[runwayId];
+    if (!rwy || !layer) return;
 
-
-// ------------------------------------------------------
-// Outils angulaires
-// ------------------------------------------------------
-function angleDiff(a, b) {
-    const d = Math.abs(a - b);
-    return Math.min(d, 360 - d);
-}
-
-
-// ------------------------------------------------------
-// Dessin piste
-// ------------------------------------------------------
-export function drawRunway(runway, layer) {
     layer.clearLayers();
 
-    const r = RUNWAYS[runway];
-    if (!r) return;
-
-    L.polyline([r.start, r.end], {
+    // Axe principal
+    L.polyline([rwy.start, rwy.end], {
         color: "#ffffff",
-        weight: 4,
-        opacity: 0.9
+        weight: 5,
+        opacity: 0.95
     }).addTo(layer);
+
+    // Contour (effet bord de piste)
+    L.polyline([rwy.start, rwy.end], {
+        color: "#00ffc8",
+        weight: 9,
+        opacity: 0.25
+    }).addTo(layer);
+
+    // Marqueurs seuils
+    L.circleMarker(rwy.start, {
+        radius: 4,
+        color: "#00ffc8",
+        fillColor: "#00ffc8",
+        fillOpacity: 1
+    }).addTo(layer).bindTooltip("Seuil " + runwayId, { permanent: false });
+
+    const opposite = runwayId === "22" ? "04" : "22";
+    L.circleMarker(rwy.end, {
+        radius: 4,
+        color: "#00ffc8",
+        fillColor: "#00ffc8",
+        fillOpacity: 1
+    }).addTo(layer).bindTooltip("Seuil " + opposite, { permanent: false });
 }
 
-// ------------------------------------------------------
-// Corridor
-// ------------------------------------------------------
-export function drawCorridor(runway, layer) {
-    try {
-        layer.clearLayers();
-        if (!runway || runway === "UNKNOWN") return;
-        if (!CORRIDORS[runway]) return;
+// =========================
+// Corridor d'approche simple
+// =========================
+export function drawCorridor(runwayId = "22", layer) {
+    const rwy = RUNWAYS[runwayId];
+    if (!rwy || !layer) return;
 
-        const line = L.polyline(CORRIDORS[runway], {
-            color: "orange",
-            weight: 2,
-            dashArray: "6,6"
-        }).addTo(layer);
+    layer.clearLayers();
 
-        if (L.polylineDecorator) {
-            L.polylineDecorator(line, {
-                patterns: [{
-                    offset: "25%",
-                    repeat: "50%",
-                    symbol: L.Symbol.arrowHead({
-                        pixelSize: 12,
-                        polygon: false,
-                        pathOptions: { stroke: true, color: "orange" }
-                    })
-                }]
-            }).addTo(layer);
-        }
+    // On prolonge l'axe de la piste côté approche
+    const factor = runwayId === "22" ? 1 : -1; // 22 vers sud-ouest, 04 vers nord-est
+    const corridorLengthNm = 8; // longueur du corridor en NM
+    const nmToDegLat = 1 / 60;
+    const nmToDegLon = 1 / (60 * Math.cos(rwy.start[0] * Math.PI / 180));
 
-    } catch (err) {
-        logErr("Erreur drawCorridor :", err);
-    }
-}
+    const headingRad = (rwy.heading * Math.PI) / 180;
+    const dxNm = Math.cos(headingRad) * corridorLengthNm * factor;
+    const dyNm = Math.sin(headingRad) * corridorLengthNm * factor;
 
+    const corridorEnd = [
+        rwy.start[0] + dyNm * nmToDegLat,
+        rwy.start[1] + dxNm * nmToDegLon
+    ];
 
-// ------------------------------------------------------
-// Logique METAR
-// ------------------------------------------------------
-export function getRunwayFromWind(windDir) {
-    if (!windDir && windDir !== 0) return "UNKNOWN";
-
-    const diff22 = angleDiff(windDir, 220);
-    const diff04 = angleDiff(windDir, 40);
-
-    return diff22 < diff04 ? "22" : "04";
-}
-
-export function computeCrosswind(windDir, windSpeed, runwayHeading) {
-    if (!windDir || !windSpeed || !runwayHeading)
-        return { crosswind: 0, angleDiff: 0 };
-
-    const diff = angleDiff(windDir, runwayHeading);
-    const rad = diff * Math.PI / 180;
-
-    return {
-        crosswind: Math.round(Math.abs(windSpeed * Math.sin(rad))),
-        angleDiff: diff
-    };
-}
-
-
-// ------------------------------------------------------
-// Panneau piste active
-// ------------------------------------------------------
-export function updateRunwayPanel(runway, windDir, windSpeed, crosswind) {
-    try {
-        const panel = document.getElementById("runway-panel");
-        if (!panel) return;
-
-        if (runway === "UNKNOWN") {
-            panel.innerHTML = "<b>Piste :</b> —<br><b>Vent :</b> —";
-            return;
-        }
-
-        panel.innerHTML = `
-            <b>Piste active :</b> ${runway}<br>
-            <b>Vent :</b> ${windDir ?? "—"}° / ${windSpeed ?? "—"} kt<br>
-            <b>Crosswind :</b> ${crosswind} kt
-        `;
-    } catch (err) {
-        logErr("Erreur updateRunwayPanel :", err);
-    }
+    L.polyline([corridorEnd, rwy.start], {
+        color: "#ff8800",
+        weight: 2,
+        dashArray: "6,4",
+        opacity: 0.8
+    }).addTo(layer);
 }
