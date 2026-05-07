@@ -20,6 +20,9 @@ export function initMap() {
         zoomControl: true
     });
 
+    // *** CRITIQUE ***
+    window._map = map;
+    
     window.L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
         maxZoom: 18,
         attribution: "&copy; OpenStreetMap"
