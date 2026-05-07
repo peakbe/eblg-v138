@@ -27,6 +27,7 @@ window.addEventListener("DOMContentLoaded", () => {
     safeLoadMetar();
     safeLoadTaf();
     safeLoadFids();
+    loadSonometers();   // ← indispensable pour afficher les sonomètres
     checkApiStatus();
     startLiveLogs();
 
@@ -34,5 +35,7 @@ window.addEventListener("DOMContentLoaded", () => {
     setInterval(safeLoadMetar, 60_000);
     setInterval(safeLoadTaf, 5 * 60_000);
     setInterval(safeLoadFids, 60_000);
+    setInterval(loadSonometers, 60_000);   // ← refresh sonomètres
     setInterval(checkApiStatus, 30_000);
 });
+
