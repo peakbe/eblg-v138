@@ -236,7 +236,7 @@ function renderSonoList(data) {
 
         row.innerHTML = `
             <span class="sono-name">${s.id}</span>
-            <span class="sono-town">${town}</span>
+            <span class="sono-town">${s.address || "—"}</span>
             <span class="sono-level">${level != null ? level + " dB" : "—"}</span>
         `;
 
