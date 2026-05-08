@@ -37,4 +37,11 @@ window.addEventListener("DOMContentLoaded", () => {
     setInterval(safeLoadFids, 60_000);
     setInterval(loadSonometers, 60_000);   // ← refresh sonomètres
     setInterval(checkApiStatus, 30_000);
+    
 });
+
+document.getElementById("btn-sonos").addEventListener("click", () => {
+    const panel = document.getElementById("sono-panel");
+    panel.classList.toggle("hidden");
+});
+
