@@ -210,17 +210,31 @@ h2 {
    FIDS
 ====================================================== */
 
-/* FIDS PRO++ */
+/* FIDS PRO+++ */
+.fids-section-title {
+    margin: 10px 0 6px;
+    font-size: 14px;
+    color: #00e5ff;
+    text-shadow: 0 0 6px #00e5ff;
+}
+
 .fids-row {
     padding: 6px 8px;
     border-radius: 4px;
     background: #11141a;
     border: 1px solid #1e2a38;
     display: grid;
-    grid-template-columns: 1fr 1fr 1fr 1fr;
+    grid-template-columns: 24px 1fr 1fr 1fr;
     font-size: 13px;
     color: #d8e0e6;
     margin-bottom: 4px;
+    align-items: center;
+}
+
+/* Icônes ATC minimalistes */
+.fids-icon {
+    font-size: 16px;
+    opacity: 0.85;
 }
 
 /* Couleurs ATC */
