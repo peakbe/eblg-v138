@@ -22,59 +22,40 @@
     <!-- ======================================================
          SIDEBAR
     ====================================================== -->
-    <div id="sidebar" class="sidebar">
-        <div id="sidebar-toggle" class="sidebar-toggle">☰</div>
+    <div id="sidebar-tabs">
+    <button data-tab="metar">METAR</button>
+    <button data-tab="taf">TAF</button>
+    <button data-tab="fids">FIDS</button>
+    <button data-tab="sono">Sonomètres</button>
+    <button data-tab="logs">Logs</button>
+</div>
 
-        <section class="panel">
-            <h2>Météo</h2>
-            <div id="metar" class="data-block">Chargement METAR…</div>
-            <div id="taf" class="data-block">Chargement TAF…</div>
-        </section>
+<div id="sidebar-panels">
 
-        <section class="panel">
-            <h2>Piste active</h2>
-            <div id="runway-panel" class="data-block">—</div>
-        </section>
-
-        <section class="panel">
-            <h2>Départs</h2>
-            <div id="fids" class="fids-container">
-                <div class="fids-row">Chargement FIDS…</div>
-            </div>
-        </section>
-
-        <section class="panel">
-            <h2 id="sono-header">
-                Sonomètres <span id="sono-toggle">⯆</span>
-            </h2>
-            <div id="sono-panel">
-                <div id="sono-list" class="sono-list"></div>
-            </div>
-            <div id="sidebar-tabs">
-            <button id="btn-sonos">Sonomètres</button>
-            </div>
-
-            <div id="sono-panel" class="panel hidden">
-            <div id="sono-list"></div>
-            </div>
-
-        </section>
-
-        <section class="panel">
-            <h2>Statut API</h2>
-            <div id="status-panel" class="status-panel"></div>
-        </section>
-
-        <section class="panel">
-            <h2>Logs Render</h2>
-            <div id="logs-panel" class="logs-panel"></div>
-        </section>
-
-        <section class="panel">
-            <h2>Logs Render LIVE</h2>
-            <div id="logs-live" class="logs-live"></div>
-        </section>
+    <div class="panel" id="panel-metar">
+        <pre id="metar"></pre>
+        <div id="runway-active"></div>
     </div>
+
+    <div class="panel hidden" id="panel-taf">
+        <pre id="taf"></pre>
+    </div>
+
+    <div class="panel hidden" id="panel-fids">
+        <div id="fids"></div>
+    </div>
+
+    <div class="panel hidden" id="panel-sono">
+        <div id="sono-list"></div>
+    </div>
+
+    <div class="panel hidden" id="panel-logs">
+        <div id="logs"></div>
+        <div id="logs-live"></div>
+    </div>
+
+</div>
+
 
     <!-- ======================================================
          DETAIL PANEL
