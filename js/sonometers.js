@@ -1,10 +1,12 @@
 // ======================================================
 // SONOMETERS PRO+++ — Cockpit IFR EBLG
+// ======================================================
 // - Couleurs ATC selon niveau sonore
 // - Tri par distance de la piste active
 // - Icônes cockpit IFR
 // - Heatmap dynamique (vert → rouge)
 // - Popup enrichi (niveau, commune, statut)
+// - Compatible backend EBLG (lat, lon, address)
 // ======================================================
 
 import { ENDPOINTS } from "./config.js";
@@ -14,7 +16,7 @@ const IS_DEV = location.hostname.includes("localhost");
 const log = (...a) => IS_DEV && console.log("[SONO]", ...a);
 const logErr = (...a) => console.error("[SONO ERROR]", ...a);
 
-// Référence : centre EBLG (approx piste)
+// Référence piste EBLG (seuil 22)
 const REF_LAT = 50.637;
 const REF_LNG = 5.443;
 
@@ -30,7 +32,7 @@ function getLat(s) {
 }
 
 function getLng(s) {
-    return s.lng ?? s.longitude ?? null;
+    return s.lng ?? s.lon ?? s.longitude ?? null;
 }
 
 function getLevel(s) {
@@ -55,8 +57,7 @@ function distanceKm(lat1, lon1, lat2, lon2) {
         Math.sin(dLat / 2) ** 2 +
         Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) *
         Math.sin(dLon / 2) ** 2;
-    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-    return R * c;
+    return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 }
 
 // Couleur ATC selon niveau sonore
@@ -71,13 +72,12 @@ function levelColor(level) {
 // Intensité heatmap selon niveau
 function levelIntensity(level) {
     if (level == null) return 0.3;
-    const min = 40;
-    const max = 80;
+    const min = 40, max = 80;
     const clamped = Math.max(min, Math.min(max, level));
-    return (clamped - min) / (max - min) * 0.8 + 0.2; // 0.2 → 1.0
+    return (clamped - min) / (max - min) * 0.8 + 0.2;
 }
 
-// Icône cockpit IFR (simple, lisible)
+// Icône cockpit IFR
 function sonoIcon(level) {
     const color = levelColor(level);
     return window.L.divIcon({
@@ -105,7 +105,7 @@ export async function loadSonometers() {
             return;
         }
 
-        // Ajout distance piste
+        // Ajout distance piste + tri
         sonoDataCache = data
             .map(s => {
                 const lat = getLat(s);
@@ -139,7 +139,6 @@ function renderSonometers(data) {
         return;
     }
 
-    // Nettoyage
     if (sonoMarkers) window.map.removeLayer(sonoMarkers);
     if (sonoHeat) window.map.removeLayer(sonoHeat);
 
@@ -166,6 +165,7 @@ function renderSonometers(data) {
 
         marker.bindPopup(`
             <b>Sonomètre ${s.id}</b><br>
+            Adresse : ${s.address || "—"}<br>
             Niveau : ${level != null ? level + " dB" : "—"}<br>
             Commune : ${town}<br>
             Statut : ${status}<br>
@@ -178,7 +178,6 @@ function renderSonometers(data) {
 
         sonoMarkers.addLayer(marker);
 
-        // Heatmap dynamique
         heatPoints.push([lat, lng, levelIntensity(level)]);
     });
 
@@ -199,7 +198,7 @@ function renderSonometers(data) {
 }
 
 // ------------------------------------------------------
-// Toggle Heatmap (optionnel si tu veux un bouton)
+// Toggle Heatmap (pour ton bouton ON/OFF)
 // ------------------------------------------------------
 export function toggleHeatmap(enabled) {
     if (!window.map || !sonoHeat) return;
@@ -211,7 +210,7 @@ export function toggleHeatmap(enabled) {
 }
 
 // ------------------------------------------------------
-// Liste latérale (triée par distance)
+// Liste latérale triée par distance
 // ------------------------------------------------------
 function renderSonoList(data) {
     const el = document.getElementById("sono-list");
@@ -264,7 +263,7 @@ function updateDetailPanel(s) {
     const status = getStatus(s);
 
     document.getElementById("detail-title").textContent = `Sonomètre ${s.id}`;
-    document.getElementById("detail-address").textContent = "—";
+    document.getElementById("detail-address").textContent = s.address || "—";
     document.getElementById("detail-town").textContent = town;
     document.getElementById("detail-status").textContent = status;
     document.getElementById("detail-distance").textContent =
