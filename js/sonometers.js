@@ -55,42 +55,71 @@ export async function loadSonometers() {
 // ======================================================
 // Rendu sur la carte
 // ======================================================
-const active = window._activeRunway || "22";
-const greenList = SONO_BY_RUNWAY[active]?.green || [];
-const redList   = SONO_BY_RUNWAY[active]?.red   || [];
+function renderSonometers(list) {
+    if (!window._map) {
+        console.error("[SONO ERROR] Carte non initialisée");
+        return;
+    }
 
-list.forEach(sono => {
-    const { lat, lon, status, id, address } = sono;
-    if (!lat || !lon) return;
+    const map = window._map;
 
-    // Couleur selon piste active
-    let color = "#888"; // défaut
+    // Reset layers
+    if (markersLayer) map.removeLayer(markersLayer);
+    if (heatLayer) map.removeLayer(heatLayer);
 
-    if (greenList.includes(id)) color = "#00ff9c";   // vert ATC
-    if (redList.includes(id))   color = "#ff4444";   // rouge ATC
-
-    const marker = L.circleMarker([lat, lon], {
-        radius: 6,
-        color,
-        fillColor: color,
-        fillOpacity: 0.9,
-        weight: 1
+    markersLayer = L.markerClusterGroup({
+        showCoverageOnHover: false,
+        maxClusterRadius: 40
     });
 
-    marker.bindPopup(`
-        <b>Sonomètre ${id}</b><br>
-        ${address || "Adresse inconnue"}<br>
-        Statut : ${status || "—"}<br>
-        Piste active : ${active}
-    `);
+    const heatPoints = [];
 
-    markersLayer.addLayer(marker);
+    // --- Ajout logique piste active ---
+    const active = window._activeRunway || "22";
+    const greenList = SONO_BY_RUNWAY[active]?.green || [];
+    const redList   = SONO_BY_RUNWAY[active]?.red   || [];
 
-    // Heatmap cohérente
-    const intensity = color === "#00ff9c" ? 0.3 : 0.8;
-    heatPoints.push([lat, lon, intensity]);
-});
+    // --- Boucle principale ---
+    list.forEach(sono => {
+        const { lat, lon, status, id, address } = sono;
+        if (!lat || !lon) return;
 
+        // Couleur selon piste active
+        let color = "#888"; // défaut neutre
+
+        if (greenList.includes(id)) color = "#00ff9c";   // vert ATC
+        if (redList.includes(id))   color = "#ff4444";   // rouge ATC
+
+        const marker = L.circleMarker([lat, lon], {
+            radius: 6,
+            color,
+            fillColor: color,
+            fillOpacity: 0.9,
+            weight: 1
+        });
+
+        marker.bindPopup(`
+            <b>Sonomètre ${id}</b><br>
+            ${address || "Adresse inconnue"}<br>
+            Statut : ${status || "—"}<br>
+            Piste active : ${active}
+        `);
+
+        markersLayer.addLayer(marker);
+
+        // Heatmap cohérente
+        const intensity = color === "#00ff9c" ? 0.3 : 0.8;
+        heatPoints.push([lat, lon, intensity]);
+    });
+
+    map.addLayer(markersLayer);
+
+    heatLayer = L.heatLayer(heatPoints, {
+        radius: 35,
+        blur: 20,
+        maxZoom: 12
+    });
+}
 
 // ======================================================
 // Toggle Heatmap
