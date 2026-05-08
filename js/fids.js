@@ -26,7 +26,7 @@ export async function loadFids() {
 }
 
 export function updateFidsUI(data) {
-    const el = document.getElementById("fids-list");
+    const el = document.getElementById("fids"); // ← CORRECTION
     if (!el) return;
 
     el.innerHTML = "";
