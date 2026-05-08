@@ -6,6 +6,8 @@
 import { ENDPOINTS } from "./config.js";
 import { fetchJSON, updateStatusPanel } from "./helpers.js";
 import { getRunwayFromWind, updateRunwayPanel, drawRunway, drawCorridor } from "./runways.js";
+import { drawRunwayDirection } from "./map.js";
+
 
 const IS_DEV = location.hostname.includes("localhost") || location.hostname.includes("127.0.0.1");
 const log = (...a) => IS_DEV && console.log("[METAR]", ...a);
@@ -49,4 +51,6 @@ export function updateMetarUI(data) {
     updateRunwayPanel(runway, windDir, windSpeed);
     drawRunway(runway, window.runwayLayer);
     drawCorridor(runway, window.corridorLayer);
+    drawRunwayDirection(activeRunway);
+
 }
