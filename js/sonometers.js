@@ -56,12 +56,12 @@ export async function loadSonometers() {
 // Rendu sur la carte
 // ======================================================
 function renderSonometers(list) {
-    if (!window._map) {
+    if (!window.map) {
         console.error("[SONO ERROR] Carte non initialisée");
         return;
     }
 
-    const map = window._map;
+    const map = window.map;
 
     // Reset layers
     if (markersLayer) map.removeLayer(markersLayer);
