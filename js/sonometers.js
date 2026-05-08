@@ -1,9 +1,5 @@
 // ======================================================
-// SONOMETERS PRO++ — Cockpit IFR
-// - Chargement sécurisé
-// - Clustering + Heatmap
-// - Intégration carte (window.map)
-// - Panneau latéral compact
+// SONOMETERS PRO++ — Cockpit IFR (compatible backend EBLG)
 // ======================================================
 
 import { ENDPOINTS } from "./config.js";
@@ -15,7 +11,6 @@ const logErr = (...a) => console.error("[SONO ERROR]", ...a);
 
 let sonoMarkers = null;
 let sonoHeat = null;
-let sonoDataCache = [];
 
 // ------------------------------------------------------
 // Chargement principal
@@ -23,10 +18,16 @@ let sonoDataCache = [];
 export async function loadSonometers() {
     try {
         const data = await fetchJSON(ENDPOINTS.sonometers);
-        sonoDataCache = Array.isArray(data) ? data : [];
-        renderSonometers(sonoDataCache);
-        renderSonoList(sonoDataCache);
-        log("Sonomètres chargés :", sonoDataCache.length);
+
+        if (!Array.isArray(data)) {
+            logErr("Format sonomètres invalide :", data);
+            return;
+        }
+
+        renderSonometers(data);
+        renderSonoList(data);
+
+        log("Sonomètres chargés :", data.length);
     } catch (err) {
         logErr("Erreur chargement sonomètres :", err);
     }
@@ -42,18 +43,9 @@ function renderSonometers(data) {
     }
 
     // Nettoyage
-    if (sonoMarkers) {
-        window.map.removeLayer(sonoMarkers);
-        sonoMarkers = null;
-    }
-    if (sonoHeat) {
-        window.map.removeLayer(sonoHeat);
-        sonoHeat = null;
-    }
+    if (sonoMarkers) window.map.removeLayer(sonoMarkers);
+    if (sonoHeat) window.map.removeLayer(sonoHeat);
 
-    if (!Array.isArray(data) || !data.length) return;
-
-    // Cluster markers
     sonoMarkers = window.L.markerClusterGroup({
         disableClusteringAtZoom: 15,
         spiderfyOnMaxZoom: true,
@@ -63,9 +55,12 @@ function renderSonometers(data) {
     const heatPoints = [];
 
     data.forEach(s => {
-        if (!s.lat || !s.lng) return;
+        const lat = s.lat || s.latitude;
+        const lng = s.lng || s.longitude;
 
-        const latlng = [s.lat, s.lng];
+        if (!lat || !lng) return;
+
+        const latlng = [lat, lng];
 
         const marker = window.L.circleMarker(latlng, {
             radius: 6,
@@ -75,37 +70,24 @@ function renderSonometers(data) {
             fillOpacity: 0.7
         });
 
-        const level = s.level || "—";
-        const name = s.name || s.id || "Sonomètre";
-
         marker.bindPopup(`
-            <b>${name}</b><br>
-            Niveau : ${level} dB<br>
-            Commune : ${s.town || "—"}<br>
-            Statut : ${s.status || "—"}
+            <b>Sonomètre ${s.id}</b><br>
+            Latitude : ${lat}<br>
+            Longitude : ${lng}
         `);
 
-        marker.on("click", () => {
-            updateDetailPanel(s);
-        });
+        marker.on("click", () => updateDetailPanel(s));
 
         sonoMarkers.addLayer(marker);
 
-        // Heatmap
-        const intensity = s.level ? Math.min(Math.max((s.level - 40) / 40, 0.1), 1) : 0.3;
-        heatPoints.push([...latlng, intensity]);
+        // Heatmap (intensité neutre)
+        heatPoints.push([lat, lng, 0.4]);
     });
 
     sonoHeat = window.L.heatLayer(heatPoints, {
         radius: 25,
         blur: 18,
-        maxZoom: 17,
-        gradient: {
-            0.2: "#00e676",
-            0.5: "#ffeb3b",
-            0.8: "#ff9800",
-            1.0: "#f44336"
-        }
+        maxZoom: 17
     });
 
     sonoMarkers.addTo(window.map);
@@ -113,19 +95,7 @@ function renderSonometers(data) {
 }
 
 // ------------------------------------------------------
-// Toggle Heatmap (si tu veux l’utiliser ailleurs)
-// ------------------------------------------------------
-export function toggleHeatmap(enabled) {
-    if (!window.map || !sonoHeat) return;
-    if (enabled) {
-        if (!window.map.hasLayer(sonoHeat)) sonoHeat.addTo(window.map);
-    } else {
-        if (window.map.hasLayer(sonoHeat)) window.map.removeLayer(sonoHeat);
-    }
-}
-
-// ------------------------------------------------------
-// Panneau latéral — liste des sonomètres
+// Liste latérale
 // ------------------------------------------------------
 function renderSonoList(data) {
     const el = document.getElementById("sono-list");
@@ -133,24 +103,21 @@ function renderSonoList(data) {
 
     el.innerHTML = "";
 
-    if (!Array.isArray(data) || !data.length) {
-        el.innerHTML = `<div class="sono-row">Aucun sonomètre disponible</div>`;
-        return;
-    }
-
     data.forEach(s => {
         const row = document.createElement("div");
         row.className = "sono-row";
 
         row.innerHTML = `
-            <span class="sono-name">${s.name || s.id || "Sonomètre"}</span>
-            <span class="sono-town">${s.town || "—"}</span>
-            <span class="sono-level">${s.level ? s.level + " dB" : "—"}</span>
+            <span class="sono-name">${s.id}</span>
+            <span class="sono-town">—</span>
+            <span class="sono-level">—</span>
         `;
 
         row.addEventListener("click", () => {
-            if (window.map && s.lat && s.lng) {
-                window.map.setView([s.lat, s.lng], 15);
+            const lat = s.lat || s.latitude;
+            const lng = s.lng || s.longitude;
+            if (window.map && lat && lng) {
+                window.map.setView([lat, lng], 15);
             }
             updateDetailPanel(s);
         });
@@ -166,11 +133,11 @@ function updateDetailPanel(s) {
     const panel = document.getElementById("detail-panel");
     if (!panel) return;
 
-    document.getElementById("detail-title").textContent = s.name || s.id || "Sonomètre";
-    document.getElementById("detail-address").textContent = s.address || "—";
-    document.getElementById("detail-town").textContent = s.town || "—";
-    document.getElementById("detail-status").textContent = s.status || "—";
-    document.getElementById("detail-distance").textContent = s.distance || "—";
+    document.getElementById("detail-title").textContent = `Sonomètre ${s.id}`;
+    document.getElementById("detail-address").textContent = "—";
+    document.getElementById("detail-town").textContent = "—";
+    document.getElementById("detail-status").textContent = "—";
+    document.getElementById("detail-distance").textContent = "—";
 
     panel.classList.remove("hidden");
 }
