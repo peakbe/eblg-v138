@@ -1,15 +1,6 @@
 // ======================================================
 // SONOMETERS PRO++++ — Cockpit IFR EBLG
 // ======================================================
-// - Couleurs ATC selon niveau sonore
-// - Tri dynamique (distance / ID / adresse)
-// - Filtre par commune
-// - Icônes cockpit IFR
-// - Heatmap dynamique (vert → rouge)
-// - Popup enrichi
-// - Highlight carte <-> liste
-// - Compatible backend EBLG (lat, lon, address)
-// ======================================================
 
 import { ENDPOINTS } from "./config.js";
 import { fetchJSON } from "./helpers.js";
@@ -52,12 +43,11 @@ export function applyRunwayColoring(activeRunway) {
     const greenSet = new Set(RWY_SECTORS[activeRunway].green);
     const redSet   = new Set(RWY_SECTORS[activeRunway].red);
 
-    // Mise à jour des marqueurs
     markerById.forEach((marker, id) => {
-        let color = "#00e5ff"; // neutre cockpit IFR
+        let color = "#00e5ff";
 
-        if (greenSet.has(id)) color = "#00e676"; // vert ATC
-        if (redSet.has(id))   color = "#f44336"; // rouge ATC
+        if (greenSet.has(id)) color = "#00e676";
+        if (redSet.has(id))   color = "#f44336";
 
         marker.setIcon(window.L.divIcon({
             className: "sono-icon",
@@ -72,7 +62,6 @@ export function applyRunwayColoring(activeRunway) {
         }));
     });
 
-    // Mise à jour de la liste
     rowById.forEach((row, id) => {
         row.style.color =
             greenSet.has(id) ? "#00e676" :
@@ -84,38 +73,24 @@ export function applyRunwayColoring(activeRunway) {
 // ------------------------------------------------------
 // Utils
 // ------------------------------------------------------
-function getLat(s) {
-    return s.lat ?? s.latitude ?? null;
-}
-
-function getLng(s) {
-    return s.lng ?? s.lon ?? s.longitude ?? null;
-}
-
-function getLevel(s) {
-    return typeof s.level === "number" ? s.level : null;
-}
+function getLat(s) { return s.lat ?? s.latitude ?? null; }
+function getLng(s) { return s.lng ?? s.lon ?? s.longitude ?? null; }
+function getLevel(s) { return typeof s.level === "number" ? s.level : null; }
 
 function getTown(s) {
-    // On dérive la commune depuis l'adresse si pas de champ dédié
     if (s.town) return s.town;
     if (s.commune) return s.commune;
     if (s.city) return s.city;
     if (s.address) {
-        // ex: "Rue de la Pommeraie, 4690 Wonck, Belgique"
         const parts = s.address.split(",");
-        if (parts.length >= 2) {
-            return parts[1].trim();
-        }
+        if (parts.length >= 2) return parts[1].trim();
     }
     return "—";
 }
 
-function getStatus(s) {
-    return s.status || "Actif";
-}
+function getStatus(s) { return s.status || "Actif"; }
 
-// Haversine (distance en km)
+// Haversine
 function distanceKm(lat1, lon1, lat2, lon2) {
     const R = 6371;
     const toRad = d => d * Math.PI / 180;
@@ -130,14 +105,13 @@ function distanceKm(lat1, lon1, lat2, lon2) {
 
 // Couleur ATC selon niveau sonore
 function levelColor(level) {
-    if (level == null) return "#00e5ff"; // neutre
-    if (level < 45) return "#00e676";    // vert
-    if (level < 55) return "#ffeb3b";    // jaune
-    if (level < 65) return "#ff9800";    // orange
-    return "#f44336";                    // rouge
+    if (level == null) return "#00e5ff";
+    if (level < 45) return "#00e676";
+    if (level < 55) return "#ffeb3b";
+    if (level < 65) return "#ff9800";
+    return "#f44336";
 }
 
-// Intensité heatmap selon niveau
 function levelIntensity(level) {
     if (level == null) return 0.3;
     const min = 40, max = 80;
@@ -145,7 +119,6 @@ function levelIntensity(level) {
     return (clamped - min) / (max - min) * 0.8 + 0.2;
 }
 
-// Icône cockpit IFR
 function sonoIcon(level) {
     const color = levelColor(level);
     return window.L.divIcon({
@@ -173,7 +146,6 @@ export async function loadSonometers() {
             return;
         }
 
-        // Ajout distance piste
         sonoDataCache = data.map(s => {
             const lat = getLat(s);
             const lng = getLng(s);
@@ -201,14 +173,12 @@ function initSonoControls(data) {
     const filterEl = document.getElementById("sono-filter-town");
     if (!sortEl || !filterEl) return;
 
-    // Peupler filtre communes
     const towns = new Set();
     data.forEach(s => {
         const t = getTown(s);
         if (t && t !== "—") towns.add(t);
     });
 
-    // Reset options (sauf "all")
     filterEl.innerHTML = `<option value="all">Commune: Toutes</option>`;
     Array.from(towns).sort().forEach(t => {
         const opt = document.createElement("option");
@@ -231,12 +201,10 @@ function initSonoControls(data) {
 function updateSonoListView() {
     let list = [...sonoDataCache];
 
-    // Filtre commune
     if (currentTownFilter !== "all") {
         list = list.filter(s => getTown(s) === currentTownFilter);
     }
 
-    // Tri
     list.sort((a, b) => {
         if (currentSort === "id") {
             return String(a.id).localeCompare(String(b.id));
@@ -244,7 +212,6 @@ function updateSonoListView() {
         if (currentSort === "address") {
             return String(a.address || "").localeCompare(String(b.address || ""));
         }
-        // distance par défaut
         const da = a._distanceKm ?? Infinity;
         const db = b._distanceKm ?? Infinity;
         return da - db;
@@ -280,145 +247,4 @@ function renderSonometers(data) {
         if (!lat || !lng) return;
 
         const level = getLevel(s);
-        const town = getTown(s);
-        const status = getStatus(s);
-
-        const marker = window.L.marker([lat, lng], {
-            icon: sonoIcon(level)
-        });
-
-        marker.bindPopup(`
-            <b>Sonomètre ${s.id}</b><br>
-            Adresse : ${s.address || "—"}<br>
-            Niveau : ${level != null ? level + " dB" : "—"}<br>
-            Commune : ${town}<br>
-            Statut : ${status}<br>
-            Distance piste : ${
-                s._distanceKm != null ? s._distanceKm.toFixed(1) + " km" : "—"
-            }
-        `);
-
-        marker.on("mouseover", () => highlightRow(s.id, true));
-        marker.on("mouseout", () => highlightRow(s.id, false));
-        marker.on("click", () => updateDetailPanel(s));
-
-        markerById.set(s.id, marker);
-        sonoMarkers.addLayer(marker);
-
-        heatPoints.push([lat, lng, levelIntensity(level)]);
-    });
-
-    sonoHeat = window.L.heatLayer(heatPoints, {
-        radius: 25,
-        blur: 18,
-        maxZoom: 17,
-        gradient: {
-            0.2: "#00e676",
-            0.5: "#ffeb3b",
-            0.8: "#ff9800",
-            1.0: "#f44336"
-        }
-    });
-
-    sonoMarkers.addTo(window.map);
-    sonoHeat.addTo(window.map);
-}
-
-// ------------------------------------------------------
-// Toggle Heatmap (pour ton bouton ON/OFF)
-// ------------------------------------------------------
-export function toggleHeatmap(enabled) {
-    if (!window.map || !sonoHeat) return;
-    if (enabled) {
-        if (!window.map.hasLayer(sonoHeat)) sonoHeat.addTo(window.map);
-    } else {
-        if (window.map.hasLayer(sonoHeat)) window.map.removeLayer(sonoHeat);
-    }
-}
-
-// ------------------------------------------------------
-// Liste latérale triée / filtrée
-// ------------------------------------------------------
-function renderSonoList(data) {
-    const el = document.getElementById("sono-list");
-    if (!el) return;
-
-    el.innerHTML = "";
-    rowById.clear();
-
-    if (!data.length) {
-        el.innerHTML = `<div class="sono-row">Aucun sonomètre disponible</div>`;
-        return;
-    }
-
-    data.forEach(s => {
-        const lat = getLat(s);
-        const lng = getLng(s);
-        if (!lat || !lng) return;
-
-        const level = getLevel(s);
-        const town = getTown(s);
-
-        const row = document.createElement("div");
-        row.className = "sono-row";
-
-        row.innerHTML = `
-            <span class="sono-name">${s.id}</span>
-            <span class="sono-town">${s.address || town}</span>
-            <span class="sono-level">${level != null ? level + " dB" : "—"}</span>
-        `;
-
-        row.addEventListener("mouseenter", () => {
-            highlightRow(s.id, true);
-            const marker = markerById.get(s.id);
-            if (marker) {
-                marker.openPopup();
-            }
-        });
-
-        row.addEventListener("mouseleave", () => {
-            highlightRow(s.id, false);
-        });
-
-        row.addEventListener("click", () => {
-            if (window.map && lat && lng) {
-                window.map.setView([lat, lng], 15);
-            }
-            updateDetailPanel(s);
-        });
-
-        rowById.set(s.id, row);
-        el.appendChild(row);
-    });
-}
-
-// ------------------------------------------------------
-// Highlight carte <-> liste
-// ------------------------------------------------------
-function highlightRow(id, on) {
-    const row = rowById.get(id);
-    if (!row) return;
-    if (on) row.classList.add("highlight");
-    else row.classList.remove("highlight");
-}
-
-// ------------------------------------------------------
-// Détail panel
-// ------------------------------------------------------
-function updateDetailPanel(s) {
-    const panel = document.getElementById("detail-panel");
-    if (!panel) return;
-
-    const level = getLevel(s);
-    const town = getTown(s);
-    const status = getStatus(s);
-
-    document.getElementById("detail-title").textContent = `Sonomètre ${s.id}`;
-    document.getElementById("detail-address").textContent = s.address || "—";
-    document.getElementById("detail-town").textContent = town;
-    document.getElementById("detail-status").textContent = status;
-    document.getElementById("detail-distance").textContent =
-        s._distanceKm != null ? s._distanceKm.toFixed(1) + " km" : "—";
-
-    panel.classList.remove("hidden");
-}
+        const
