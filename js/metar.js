@@ -11,6 +11,8 @@ import {
     updateRunwayPanel
 } from "./runways.js";
 import { drawRunwayDirection } from "./map.js";
+import { applyRunwayColoring } from "./sonometers.js";
+applyRunwayColoring(active?.id ?? null);
 
 const IS_DEV = location.hostname.includes("localhost");
 const log = (...a) => IS_DEV && console.log("[METAR]", ...a);
