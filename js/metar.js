@@ -37,23 +37,8 @@ export async function loadMetar() {
 }
 
 // Mise à jour UI + piste
-export function updateMetarUI(data) {
-    const el = document.getElementById("metar");
-    if (!el) return;
 
-    if (!data || !data.raw) {
-        el.innerText = "METAR indisponible";
-        window._activeRunway = null;
-        updateRunwayIndicator(window._activeRunway);
-        drawRunwayDirection(null);
-        updateRunwayPanel("—", null, null, 0, 0);
-        return;
-        drawNoiseCorridor(active?.id ?? null);
-    }
-
-    el.innerText = data.raw;
-
-  // 1) Extraction vent
+// 1) Extraction vent
 const windDir = data.wind_direction?.value ?? null;
 const windSpeed = data.wind_speed?.value ?? null;
 
@@ -84,8 +69,23 @@ updateRunwayPanel(
     headwind
 );
 
+export function updateMetarUI(data) {
+    const el = document.getElementById("metar");
+    if (!el) return;
 
-    drawRunwayDirection(active?.id ?? null);
+    if (!data || !data.raw) {
+        el.innerText = "METAR indisponible";
+        window._activeRunway = null;
+        updateRunwayIndicator(window._activeRunway);
+        drawRunwayDirection(null);
+        updateRunwayPanel("—", null, null, 0, 0);
+        return;
+        drawNoiseCorridor(active?.id ?? null);
+    }
+
+    el.innerText = data.raw;
+
+     drawRunwayDirection(active?.id ?? null);
 }
 
 function updateRunwayIndicator(rwy) {
