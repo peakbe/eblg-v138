@@ -31,6 +31,56 @@ let rowById = new Map();
 let currentSort = "distance";
 let currentTownFilter = "all";
 
+// ======================================================
+// COUPLAGE PISTE ACTIVE → SONOMÈTRES (rouge/vert)
+// ======================================================
+
+const RWY_SECTORS = {
+    "22": {
+        green: ["F002","F003","F004","F005","F006","F007","F008","F009","F010","F011","F012","F013","F016"],
+        red:   ["F001","F014","F015","F017"]
+    },
+    "04": {
+        green: ["F002","F003","F007","F008","F009","F011","F013","F014","F015"],
+        red:   ["F004","F005","F006","F010","F012","F016","F001","F017"]
+    }
+};
+
+export function applyRunwayColoring(activeRunway) {
+    if (!activeRunway || !RWY_SECTORS[activeRunway]) return;
+
+    const greenSet = new Set(RWY_SECTORS[activeRunway].green);
+    const redSet   = new Set(RWY_SECTORS[activeRunway].red);
+
+    // Mise à jour des marqueurs
+    markerById.forEach((marker, id) => {
+        let color = "#00e5ff"; // neutre cockpit IFR
+
+        if (greenSet.has(id)) color = "#00e676"; // vert ATC
+        if (redSet.has(id))   color = "#f44336"; // rouge ATC
+
+        marker.setIcon(window.L.divIcon({
+            className: "sono-icon",
+            html: `<div style="
+                width:10px;
+                height:10px;
+                border-radius:50%;
+                background:${color};
+                box-shadow:0 0 6px ${color};
+            "></div>`,
+            iconSize: [10, 10]
+        }));
+    });
+
+    // Mise à jour de la liste
+    rowById.forEach((row, id) => {
+        row.style.color =
+            greenSet.has(id) ? "#00e676" :
+            redSet.has(id)   ? "#f44336" :
+                               "#00e5ff";
+    });
+}
+
 // ------------------------------------------------------
 // Utils
 // ------------------------------------------------------
