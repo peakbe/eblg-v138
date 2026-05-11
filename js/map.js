@@ -8,6 +8,39 @@ let runwayLine = null;
 let runwayArrow = null;
 let runwayLabel = null;
 
+// ======================================================
+// MAP INIT — Cockpit IFR EBLG
+// ======================================================
+
+export function initMap() {
+    if (!window.L) {
+        console.error("[MAP] Leaflet non chargé");
+        return;
+    }
+
+    const mapEl = document.getElementById("map");
+    if (!mapEl) {
+        console.error("[MAP] #map introuvable");
+        return;
+    }
+
+    const map = window.L.map("map", {
+        center: [50.645, 5.46],   // centre EBLG
+        zoom: 12,
+        zoomControl: true
+    });
+
+    window.map = map;
+
+    window.L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+        maxZoom: 18,
+        attribution: "&copy; OpenStreetMap"
+    }).addTo(map);
+
+    console.log("[MAP] Carte initialisée");
+}
+
+
 export function drawRunwayDirection(runwayId) {
     if (!window.map) return;
 
