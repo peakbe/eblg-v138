@@ -58,3 +58,66 @@ export function drawRunwayDirection(runwayId) {
         })
     }).addTo(window.map);
 }
+// ======================================================
+// CORRIDOR BRUIT PRO+++ — Cockpit IFR
+// ======================================================
+
+let noiseCorridor = null;
+
+export function drawNoiseCorridor(runwayId) {
+    if (!window.map) return;
+
+    // Nettoyage
+    if (noiseCorridor) {
+        window.map.removeLayer(noiseCorridor);
+        noiseCorridor = null;
+    }
+
+    if (!runwayId || !RUNWAYS[runwayId]) return;
+
+    const rw = RUNWAYS[runwayId];
+
+    // Axe piste : start → end
+    const A = rw.start;
+    const B = rw.end;
+
+    // Largeur corridor (en mètres)
+    const width = 800; // 800 m de chaque côté
+
+    // Fonction pour décaler un point perpendiculairement
+    function offsetPoint(lat, lng, dx, dy) {
+        const R = 6378137;
+        const newLat = lat + (dy / R) * (180 / Math.PI);
+        const newLng = lng + (dx / (R * Math.cos(lat * Math.PI / 180))) * (180 / Math.PI);
+        return [newLat, newLng];
+    }
+
+    // Calcul vecteur piste
+    const dx = B[1] - A[1];
+    const dy = B[0] - A[0];
+
+    // Normalisation
+    const len = Math.sqrt(dx*dx + dy*dy);
+    const nx = -dy / len; // vecteur perpendiculaire
+    const ny = dx / len;
+
+    // Décalage corridor
+    const A_left  = offsetPoint(A[0], A[1],  nx * width, ny * width);
+    const A_right = offsetPoint(A[0], A[1], -nx * width, -ny * width);
+    const B_left  = offsetPoint(B[0], B[1],  nx * width, ny * width);
+    const B_right = offsetPoint(B[0], B[1], -nx * width, -ny * width);
+
+    // Couleur cockpit IFR
+    const color = runwayId === "04" ? "#00e676" : "#2979ff";
+
+    noiseCorridor = window.L.polygon(
+        [A_left, B_left, B_right, A_right],
+        {
+            color,
+            weight: 2,
+            opacity: 0.8,
+            fillColor: color,
+            fillOpacity: 0.15
+        }
+    ).addTo(window.map);
+}
