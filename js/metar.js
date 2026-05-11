@@ -70,3 +70,22 @@ export function updateMetarUI(data) {
 
     drawRunwayDirection(active?.id ?? null);
 }
+
+function updateRunwayIndicator(rwy) {
+    const el = document.getElementById("rwy-indicator");
+    if (!el) return;
+
+    el.className = "rwy-box"; // reset
+
+    if (!rwy) {
+        el.textContent = "RWY --";
+        el.classList.add("rwy-null");
+        return;
+    }
+
+    el.textContent = `RWY ${rwy}`;
+
+    if (rwy === "04") el.classList.add("rwy-04");
+    else if (rwy === "22") el.classList.add("rwy-22");
+    else el.classList.add("rwy-null");
+}
