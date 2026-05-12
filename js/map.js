@@ -2,7 +2,7 @@
 // MAP PRO+++ — Cockpit IFR EBLG
 // - Init Leaflet
 // - Affichage piste 04/22 + flèche
-// - Corridor bruit aligné sur la piste réelle
+// - Corridor bruit aligné (via vecteurs runways.js PRO+++)
 // ======================================================
 
 import { RUNWAYS } from "./runways.js";
@@ -98,7 +98,7 @@ export function drawRunwayDirection(runwayId) {
 }
 
 // ======================================================
-// CORRIDOR BRUIT PRO+++ — aligné sur 22↔04
+// CORRIDOR BRUIT PRO+++ — parfaitement aligné
 // ======================================================
 
 let noiseCorridor = null;
@@ -113,9 +113,10 @@ export function drawNoiseCorridor(runwayId) {
 
     if (!runwayId || !RUNWAYS[runwayId]) return;
 
-    // Géométrie commune : 22 → 04 (corridor centré sur la piste)
-    const A = RUNWAYS["22"].start; // seuil 22
-    const B = RUNWAYS["04"].start; // seuil 04
+    // Toujours utiliser la géométrie 22 → 04 (vecteur piste réel)
+    const rwy22 = RUNWAYS["22"];
+    const A = rwy22.start; // THR 22
+    const B = rwy22.end;   // THR 04
 
     const width = 800; // m de chaque côté
 
@@ -126,21 +127,13 @@ export function drawNoiseCorridor(runwayId) {
         return [newLat, newLng];
     }
 
-    const dx = B[1] - A[1]; // lon
-    const dy = B[0] - A[0]; // lat
+    // Vecteurs pré-calculés dans runways.js PRO+++
+    const { left, right } = rwy22.normals;
 
-    const len = Math.sqrt(dx * dx + dy * dy) || 1;
-    const ux = dx / len;
-    const uy = dy / len;
-
-    // normale gauche/droite
-    const nx = -uy;
-    const ny = ux;
-
-    const A_left  = offsetPoint(A[0], A[1],  nx * width, ny * width);
-    const A_right = offsetPoint(A[0], A[1], -nx * width, -ny * width);
-    const B_left  = offsetPoint(B[0], B[1],  nx * width, ny * width);
-    const B_right = offsetPoint(B[0], B[1], -nx * width, -ny * width);
+    const A_left  = offsetPoint(A[0], A[1],  left.nx * width,  left.ny * width);
+    const A_right = offsetPoint(A[0], A[1], right.nx * width, right.ny * width);
+    const B_left  = offsetPoint(B[0], B[1],  left.nx * width,  left.ny * width);
+    const B_right = offsetPoint(B[0], B[1], right.nx * width, right.ny * width);
 
     const color = runwayId === "04" ? "#00e676" : "#2979ff";
 
