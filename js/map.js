@@ -1,27 +1,25 @@
 // ======================================================
 // MAP PRO+++ — Cockpit IFR EBLG
-// - Init Leaflet
-// - Affichage piste 04/22 + flèche
-// - Corridor bruit aligné (via vecteurs runways.js PRO+++)
+// - Piste 04/22 + flèche
+// - Corridor bruit aligné
+// - Overlay vent (vecteur)
+// - Overlay trajectoires DEP/ARR
 // ======================================================
 
 import { RUNWAYS } from "./runways.js";
+
+let runwayLine = null;
+let runwayArrow = null;
+let runwayLabel = null;
+let noiseCorridor = null;
+let windVector = null;
+let depTrack = null;
+let arrTrack = null;
 
 // ------------------------------------------------------
 // INIT MAP
 // ------------------------------------------------------
 export function initMap() {
-    if (!window.L) {
-        console.error("[MAP] Leaflet non chargé");
-        return;
-    }
-
-    const mapEl = document.getElementById("map");
-    if (!mapEl) {
-        console.error("[MAP] #map introuvable");
-        return;
-    }
-
     const map = window.L.map("map", {
         center: [50.64, 5.45],
         zoom: 12,
@@ -34,18 +32,11 @@ export function initMap() {
         maxZoom: 18,
         attribution: "&copy; OpenStreetMap"
     }).addTo(map);
-
-    console.log("[MAP] Carte initialisée");
 }
 
 // ======================================================
-// RUNWAY DIRECTION — ligne + flèche
+// RUNWAY DIRECTION
 // ======================================================
-
-let runwayLine = null;
-let runwayArrow = null;
-let runwayLabel = null;
-
 export function drawRunwayDirection(runwayId) {
     if (!window.map) return;
 
@@ -98,27 +89,20 @@ export function drawRunwayDirection(runwayId) {
 }
 
 // ======================================================
-// CORRIDOR BRUIT PRO+++ — parfaitement aligné
+// CORRIDOR BRUIT — aligné via vecteurs runways.js
 // ======================================================
-
-let noiseCorridor = null;
-
 export function drawNoiseCorridor(runwayId) {
     if (!window.map) return;
 
-    if (noiseCorridor) {
-        window.map.removeLayer(noiseCorridor);
-        noiseCorridor = null;
-    }
+    if (noiseCorridor) window.map.removeLayer(noiseCorridor);
 
     if (!runwayId || !RUNWAYS[runwayId]) return;
 
-    // Toujours utiliser la géométrie 22 → 04 (vecteur piste réel)
     const rwy22 = RUNWAYS["22"];
-    const A = rwy22.start; // THR 22
-    const B = rwy22.end;   // THR 04
+    const A = rwy22.start;
+    const B = rwy22.end;
 
-    const width = 800; // m de chaque côté
+    const width = 800;
 
     function offsetPoint(lat, lng, dx, dy) {
         const R = 6378137;
@@ -127,7 +111,6 @@ export function drawNoiseCorridor(runwayId) {
         return [newLat, newLng];
     }
 
-    // Vecteurs pré-calculés dans runways.js PRO+++
     const { left, right } = rwy22.normals;
 
     const A_left  = offsetPoint(A[0], A[1],  left.nx * width,  left.ny * width);
@@ -147,4 +130,89 @@ export function drawNoiseCorridor(runwayId) {
             fillOpacity: 0.15
         }
     ).addTo(window.map);
+}
+
+// ======================================================
+// OVERLAY VENT — flèche + intensité
+// ======================================================
+export function drawWindVector(windDir, windSpeed) {
+    if (!window.map) return;
+
+    if (windVector) window.map.removeLayer(windVector);
+
+    if (windDir == null || windSpeed == null) return;
+
+    const center = [50.645, 5.45];
+
+    const length = 0.02 * (windSpeed / 10);
+
+    const rad = (windDir - 180) * Math.PI / 180;
+
+    const end = [
+        center[0] + Math.sin(rad) * length,
+        center[1] + Math.cos(rad) * length
+    ];
+
+    windVector = window.L.polyline([center, end], {
+        color: "#00e5ff",
+        weight: 4,
+        opacity: 0.9
+    }).addTo(window.map);
+
+    window.L.marker(end, {
+        icon: window.L.divIcon({
+            className: "wind-label",
+            html: `<div style="
+                color:#00e5ff;
+                font-size:13px;
+                font-weight:600;
+                text-shadow:0 0 4px black;
+            ">${windDir}° / ${windSpeed} kt</div>`
+        })
+    }).addTo(window.map);
+}
+
+// ======================================================
+// TRAJECTOIRES DEP / ARR — courbes réalistes
+// ======================================================
+export function drawTracks(runwayId) {
+    if (!window.map) return;
+
+    if (depTrack) window.map.removeLayer(depTrack);
+    if (arrTrack) window.map.removeLayer(arrTrack);
+
+    if (!runwayId || !RUNWAYS[runwayId]) return;
+
+    const rw = RUNWAYS[runwayId];
+    const A = rw.start;
+    const B = rw.end;
+
+    const dx = B[1] - A[1];
+    const dy = B[0] - A[0];
+
+    const dep = [
+        A,
+        [A[0] + dy * 0.02, A[1] - dx * 0.02],
+        [A[0] + dy * 0.05, A[1] - dx * 0.05]
+    ];
+
+    const arr = [
+        [B[0] - dy * 0.05, B[1] + dx * 0.05],
+        [B[0] - dy * 0.02, B[1] + dx * 0.02],
+        B
+    ];
+
+    depTrack = window.L.polyline(dep, {
+        color: "#00e676",
+        weight: 3,
+        opacity: 0.9,
+        dashArray: "6,4"
+    }).addTo(window.map);
+
+    arrTrack = window.L.polyline(arr, {
+        color: "#ff9100",
+        weight: 3,
+        opacity: 0.9,
+        dashArray: "6,4"
+    }).addTo(window.map);
 }
