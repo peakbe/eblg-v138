@@ -116,4 +116,3 @@ function updateRunwayIndicator(rwy) {
     else if (rwy === "22") el.classList.add("rwy-22");
     else el.classList.add("rwy-null");
 }
-
