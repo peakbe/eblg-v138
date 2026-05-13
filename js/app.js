@@ -9,6 +9,18 @@ import { safeLoadFids } from "./fids.js";
 import { checkApiStatus } from "./status.js";
 import { loadLogs } from "./logs.js";
 import { startLiveLogs } from "./logsLive.js";
+import { toggleNoiseHeatmap } from "./map.js";
+
+let noiseHeatmapEnabled = true;
+
+const noiseHeatBtn = document.getElementById("btn-noiseheat-toggle");
+if (noiseHeatBtn) {
+    noiseHeatBtn.addEventListener("click", () => {
+        noiseHeatmapEnabled = !noiseHeatmapEnabled;
+        toggleNoiseHeatmap(noiseHeatmapEnabled);
+        noiseHeatBtn.textContent = noiseHeatmapEnabled ? "Heatmap ON" : "Heatmap OFF";
+    });
+}
 
 window.addEventListener("DOMContentLoaded", () => {
 
