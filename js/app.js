@@ -59,6 +59,17 @@ window.addEventListener("DOMContentLoaded", () => {
     // Initialisation carte
     // --------------------------------------------------
     initMap();
+    
+    // =========================
+    // BOUTON RESET MAP
+    // =========================
+
+    const resetMapBtn = document.getElementById("btn-reset-map");
+    if (resetMapBtn) {
+    resetMapBtn.addEventListener("click", () => {
+        resetMapView();
+    });
+}
 
     // --------------------------------------------------
     // Chargement des modules
