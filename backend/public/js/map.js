@@ -384,7 +384,7 @@ export async function updateADSB() {
             heatPoints.push([ac.lat, ac.lon, intensity]);
         });
 
-        adsbHeatmap.setLatLngs(heatPoints);
+        updateADSBHeatmap(heatPoints);
 
         for (const [key, track] of adsbTracks.entries()) {
             if (now - track.lastUpdate > 60000) {
