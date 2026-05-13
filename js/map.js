@@ -344,3 +344,26 @@ export function updateNoiseHeatmap(sonos) {
         }
     }).addTo(window.map);
 }
+// ======================================================
+// TOGGLE HEATMAP BRUIT PRO+++
+// ======================================================
+
+let noiseHeatmapVisible = true;
+
+export function toggleNoiseHeatmap(enabled) {
+    noiseHeatmapVisible = enabled;
+
+    if (!window.map) return;
+
+    if (!noiseHeatmapVisible) {
+        if (noiseHeatmap) {
+            window.map.removeLayer(noiseHeatmap);
+        }
+        return;
+    }
+
+    // Réafficher la heatmap si elle existe déjà
+    if (noiseHeatmap) {
+        noiseHeatmap.addTo(window.map);
+    }
+}
