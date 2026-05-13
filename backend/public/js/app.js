@@ -3,6 +3,7 @@
 // ======================================================
 
 import { initMap, resetMapView, toggleNoiseHeatmap } from "./map.js";
+import { updateADSB } from "./map.js";
 import { safeLoadMetar } from "./metar.js";
 import { safeLoadTaf } from "./taf.js";
 import { safeLoadFids } from "./fids.js";
@@ -30,6 +31,10 @@ if (noiseHeatBtn) {
 // =========================
 
 window.addEventListener("DOMContentLoaded", () => {
+    initMap();
+    // ...
+    updateADSB();
+});
 
     console.log("[APP] Initialisation cockpit IFR…");
 
