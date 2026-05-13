@@ -4,7 +4,6 @@
 
 import { ENDPOINTS } from "./config.js";
 import { fetchJSON } from "./helpers.js";
-import { getActiveRunway } from "./metar.js";
 
 export let map = null;
 
