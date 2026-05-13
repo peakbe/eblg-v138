@@ -18,7 +18,7 @@ app.use(cors());
 // --------------------------------------------------
 // STATIC FRONTEND
 // --------------------------------------------------
-const publicDir = path.join(__dirname, "public");
+const publicDir = path.join(__dirname, "..");
 app.use(express.static(publicDir));
 
 // --------------------------------------------------
