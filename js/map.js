@@ -344,6 +344,20 @@ export function updateNoiseHeatmap(sonos) {
         }
     }).addTo(window.map);
 }
+
+// ======================================================
+// RESET MAP VIEW PRO+++
+// ======================================================
+
+export function resetMapView() {
+    if (!window.map) return;
+
+    window.map.setView([50.64, 5.45], 12, {
+        animate: true,
+        duration: 0.6
+    });
+}
+
 // ======================================================
 // TOGGLE HEATMAP BRUIT PRO+++
 // ======================================================
