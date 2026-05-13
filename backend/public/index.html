@@ -116,38 +116,39 @@
     ====================================================== -->
 
     <!-- Leaflet core -->
-    <script defer src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script defer src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
-    <!-- MarkerCluster -->
-    <script defer src="https://unpkg.com/leaflet.markercluster/dist/leaflet.markercluster.js"></script>
+<!-- MarkerCluster -->
+<script defer src="https://unpkg.com/leaflet.markercluster/dist/leaflet.markercluster.js"></script>
 
-    <!-- Heatmap plugin -->
-    <script defer src="https://unpkg.com/leaflet.heat/dist/leaflet-heat.js"></script>
+<!-- Heatmap plugin -->
+<script defer src="https://unpkg.com/leaflet.heat/dist/leaflet-heat.js"></script>
 
-    <!-- PolylineDecorator plugin -->
-    <script defer src="https://unpkg.com/leaflet-polylinedecorator"></script>
+<!-- PolylineDecorator plugin -->
+<script defer src="https://unpkg.com/leaflet-polylinedecorator"></script>
 
-    <!-- App -->
-    <!-- CONFIG (doit être chargé en premier) -->
-    <script type="module" src="js/config.js"></script>
+<!-- CONFIG -->
+<script type="module" src="/js/config.js"></script>
 
-    <!-- Modules de base -->
-    <script type="module" src="js/helpers.js"></script>
-    <script type="module" src="js/map.js"></script>
+<!-- Modules de base -->
+<script type="module" src="/js/helpers.js"></script>
 
-    <!-- Modules data -->
-    <script type="module" src="js/metar.js"></script>
-    <script type="module" src="js/taf.js"></script>
-    <script type="module" src="js/fids.js"></script>
-    <script type="module" src="js/sonometers.js"></script>
+<!-- ❌ map.js NE DOIT PAS être chargé ici -->
+<!-- <script type="module" src="js/map.js"></script> -->
 
-    <!-- Status & logs -->
-    <script type="module" src="js/status.js"></script>
-    <script type="module" src="js/logs.js"></script>
-    <script type="module" src="js/logsLive.js"></script>
+<!-- Modules data -->
+<script type="module" src="/js/metar.js"></script>
+<script type="module" src="/js/taf.js"></script>
+<script type="module" src="/js/fids.js"></script>
+<script type="module" src="/js/sonometers.js"></script>
 
-    <!-- App (doit être chargé en dernier) -->
-    <script type="module" src="js/app.js"></script>
+<!-- Status & logs -->
+<script type="module" src="/js/status.js"></script>
+<script type="module" src="/js/logs.js"></script>
+<script type="module" src="/js/logsLive.js"></script>
+
+<!-- App (doit être chargé en dernier) -->
+<script type="module" src="/js/app.js"></script>
 
 </body>
 </html>
