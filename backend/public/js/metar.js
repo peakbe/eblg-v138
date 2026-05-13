@@ -1,149 +1,94 @@
 // ======================================================
-// METAR PRO+++ — Cockpit IFR EBLG
-// - Mapping CheckWX → format interne
-// - Détection piste active
-// - Mise à jour carte (runway + corridor)
-// - Mise à jour panneau piste
-// - Couplage sonomètres
+// METAR.JS — EBLG Tower Glass
 // ======================================================
 
-import { ENDPOINTS } from "./config.js";
-import { fetchJSON, updateStatusPanel } from "./helpers.js";
-import { getRunwayFromWind, computeCrosswind } from "./runways.js";
-import { drawRunwayDirection, drawNoiseCorridor } from "./map.js";
-import { drawWindVector, drawTracks } from "./map.js";
-import { applyRunwayColoring } from "./sonometers.js";
-import { drawApproachCorridor } from "./map.js";
+import { drawApproachCorridor, drawDepartureCorridor } from "./map.js";
 
-const IS_DEV = location.hostname.includes("localhost");
-const log = (...a) => IS_DEV && console.log("[METAR]", ...a);
-const logErr = (...a) => console.error("[METAR ERROR]", ...a);
+const METAR_URL = "/api/metar"; // adapte si besoin
 
-// ------------------------------------------------------
-// Chargement sécurisé
-// ------------------------------------------------------
-export async function safeLoadMetar() {
+let lastMetar = null;
+
+// -----------------------------
+// Init
+// -----------------------------
+export function initMetar() {
+    fetchMetar();
+    setInterval(fetchMetar, 5 * 60 * 1000); // toutes les 5 min
+}
+
+// -----------------------------
+// Fetch METAR
+// -----------------------------
+async function fetchMetar() {
     try {
-        await loadMetar();
-        log("METAR chargé");
-    } catch (err) {
-        logErr("Erreur METAR :", err);
-    }
-}
+        const r = await fetch(METAR_URL);
+        if (!r.ok) throw new Error("HTTP " + r.status);
 
-// ------------------------------------------------------
-// Chargement brut + mapping CheckWX → interne
-// ------------------------------------------------------
-export async function loadMetar() {
-    const api = await fetchJSON(ENDPOINTS.metar);
+        const data = await r.text(); // ou .json() selon ton backend
+        const metar = typeof data === "string" ? data : (data.metar || "");
 
-    // Format CheckWX → format interne
-    const src = api?.data?.[0] ?? null;
+        if (!metar) return;
 
-    const mapped = src ? {
-        raw: src.raw_text,
-        wind_direction: { value: src.wind?.degrees ?? null },
-        wind_speed: { value: src.wind?.speed_kts ?? null }
-    } : null;
+        lastMetar = metar;
+        updateMetarUI(metar);
 
-    updateMetarUI(mapped);
-    updateStatusPanel("METAR", api);
-}
+        const activeRunway = detectActiveRunway(metar);
+        updateRunwayUI(activeRunway);
 
-// ------------------------------------------------------
-// Mise à jour UI + piste + carte + sonomètres
-// ------------------------------------------------------
-export function updateMetarUI(data) {
-
-    const el = document.getElementById("metar");
-    if (!el) return;
-
-    // METAR indisponible
-    if (!data || !data.raw) {
-        el.innerText = "METAR indisponible";
-        window._activeRunway = null;
-        updateRunwayIndicator(null);
-        drawRunwayDirection(null);
-        drawNoiseCorridor(null);
-        drawWindVector(windDir, windSpeed);
-        drawTracks(active?.id ?? null);
-        updateRunwayPanel("—", null, null, 0, 0);
         drawApproachCorridor(activeRunway);
+        drawDepartureCorridor(activeRunway);
 
-        return;
+    } catch (e) {
+        console.error("[METAR] Erreur chargement", e);
     }
-
-    // Affichage brut
-    el.innerText = data.raw;
-
-    // 1) Extraction vent
-    const windDir = data.wind_direction?.value ?? null;
-    const windSpeed = data.wind_speed?.value ?? null;
-
-    // 2) Détermination piste active
-    const active = getRunwayFromWind(windDir);
-    window._activeRunway = active?.id ?? null;
-
-    // 3) Mise à jour carte
-    drawRunwayDirection(active?.id ?? null);
-    drawNoiseCorridor(active?.id ?? null);
-
-    // 4) Couplage sonomètres
-    applyRunwayColoring(active?.id ?? null);
-
-    // 5) Calcul vent de travers / face
-    const { crosswind, headwind } = computeCrosswind(
-        windDir,
-        windSpeed,
-        active?.heading ?? null
-    );
-
-    // 6) Mise à jour panneau piste
-    updateRunwayPanel(
-        active?.id ?? "—",
-        windDir,
-        windSpeed,
-        crosswind,
-        headwind
-    );
-
-    // 7) Indicateur visuel RWY
-    updateRunwayIndicator(active?.id ?? null);
 }
 
-// ------------------------------------------------------
-// Indicateur visuel RWY (barre supérieure)
-// ------------------------------------------------------
-function updateRunwayIndicator(rwy) {
-    const el = document.getElementById("rwy-indicator");
-    if (!el) return;
+// -----------------------------
+// UI METAR
+// -----------------------------
+function updateMetarUI(metar) {
+    const el = document.getElementById("metar");
+    if (el) el.textContent = metar;
+}
 
-    el.className = "rwy-box";
+// -----------------------------
+// Détection piste active
+// -----------------------------
+function detectActiveRunway(metar) {
+    // Exemple METAR : EBLG 121320Z 23012KT ...
+    const m = metar.match(/ (\d{3})(\d{2})KT/);
+    if (!m) return null;
+
+    const windDir = parseInt(m[1], 10); // en degrés
+
+    const rwy04 = 40;
+    const rwy22 = 220;
+
+    const diff04 = angleDiff(windDir, rwy04);
+    const diff22 = angleDiff(windDir, rwy22);
+
+    // On prend la piste la plus alignée avec le vent (vent de face)
+    return diff04 < diff22 ? "04" : "22";
+}
+
+function angleDiff(a, b) {
+    let d = Math.abs(a - b) % 360;
+    return d > 180 ? 360 - d : d;
+}
+
+// -----------------------------
+// UI RWY
+// -----------------------------
+function updateRunwayUI(rwy) {
+    const box = document.getElementById("rwy-indicator");
+    const panel = document.getElementById("runway-active");
 
     if (!rwy) {
-        el.textContent = "RWY --";
-        el.classList.add("rwy-null");
+        if (box) box.textContent = "RWY --";
+        if (panel) panel.textContent = "Piste active : --";
         return;
     }
 
-    el.textContent = `RWY ${rwy}`;
-
-    if (rwy === "04") el.classList.add("rwy-04");
-    else if (rwy === "22") el.classList.add("rwy-22");
-    else el.classList.add("rwy-null");
-}
-
-// ------------------------------------------------------
-// Panneau piste (UI cockpit IFR)
-// ------------------------------------------------------
-function updateRunwayPanel(rwy, windDir, windSpeed, crosswind, headwind) {
-    const el = document.getElementById("runway-panel");
-    if (!el) return;
-
-    el.innerHTML = `
-        <div class="rwy-title">Piste active : <b>${rwy}</b></div>
-        <div>Vent : ${windDir ?? "—"}° / ${windSpeed ?? "—"} kt</div>
-        <div>Vent de face : ${headwind} kt</div>
-        <div>Vent de travers : ${crosswind} kt</div>
-    `;
+    if (box) box.textContent = `RWY ${rwy}`;
+    if (panel) panel.textContent = `Piste active : RWY ${rwy}`;
 }
