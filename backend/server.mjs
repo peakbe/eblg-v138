@@ -17,7 +17,7 @@ const publicDir = path.join(__dirname, "public");
 app.use(express.static(publicDir));
 
 // --------------------------------------------------
-// ADS-B OpenSky PRO+++ (cache + normalisation)
+// ADS-B OpenSky PRO+++ (auth + cache + normalisation)
 // --------------------------------------------------
 
 let adsbCache = null;
@@ -35,7 +35,13 @@ app.get("/api/adsb", async (req, res) => {
         const url =
             "https://opensky-network.org/api/states/all?lamin=50.2&lomin=5.0&lamax=51.0&lomax=6.0";
 
-        const r = await fetch(url);
+        const auth = "Basic " + Buffer.from(
+            process.env.OS_USER + ":" + process.env.OS_PASS
+        ).toString("base64");
+
+        const r = await fetch(url, {
+            headers: { "Authorization": auth }
+        });
 
         if (!r.ok) {
             console.error("[ADSB] OpenSky HTTP", r.status);
