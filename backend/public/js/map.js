@@ -59,7 +59,8 @@ function passesAdsbFilters(ac) {
     if (spd < adsbFilter.minSpd || spd > adsbFilter.maxSpd) return false;
     if (adsbFilter.types !== "all" && adsbFilter.types !== type) return false;
 
-    return true;
+    return trueconst adsbLabelsLayer = L.layerGroup();
+    
 }
 
 // ------------------------------------------------------
@@ -81,6 +82,7 @@ export function initMap() {
     // Couches ADS-B
     adsbLayer.addTo(map);
     adsbTracksLayer.addTo(map);
+    adsbLabelsLayer.addTo(map);
 
     console.log("[MAP] Initialisation OK");
 }
@@ -107,6 +109,8 @@ export async function updateADSB() {
 
         adsbLayer.clearLayers();
         adsbTracksLayer.clearLayers();
+        adsbLabelsLayer.clearLayers();
+
 
         const now = Date.now();
 
@@ -172,6 +176,16 @@ export async function updateADSB() {
 
             marker.addTo(adsbLayer);
         });
+        
+        // Label dynamique (callsign)
+        const label = L.divIcon({
+        className: "adsb-label",
+        html: `<div class="adsb-label-text">${callsign}</div>`,
+        iconSize: [80, 20],
+        iconAnchor: [40, -10]
+});
+
+L.marker(pos, { icon: label }).addTo(adsbLabelsLayer);
 
         // Nettoyage des traces anciennes
         for (const [key, track] of adsbTracks.entries()) {
