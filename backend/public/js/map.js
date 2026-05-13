@@ -34,6 +34,9 @@ export function initMap() {
     }).addTo(map);
 }
 
+adsbLayer.addTo(map);
+adsbTracksLayer.addTo(map);
+
 // ======================================================
 // RUNWAY DIRECTION
 // ======================================================
@@ -308,6 +311,22 @@ export async function updateADSB() {
 
 // Rafraîchissement automatique
 setInterval(updateADSB, 8000);
+
+// Couches ADS-B
+const adsbLayer = L.layerGroup();
+const adsbTracksLayer = L.layerGroup();
+
+// État des pistes fantômes
+const adsbTracks = new Map(); // key = icao / hex, value = { positions: [...], lastUpdate }
+
+// Filtres
+let adsbFilter = {
+    minAlt: 0,
+    maxAlt: 45000,
+    minSpd: 0,
+    maxSpd: 600,
+    types: "all" // "all" | "cargo" | "pax" | "ga"
+};
 
 
 // ======================================================
