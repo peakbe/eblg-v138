@@ -233,7 +233,7 @@ export async function updateADSB() {
         adsbLayer = null;
     }
 
-    const url = "https://opensky-network.org/api/states/all";
+    const url = "/api/adsb"; // ← au lieu de OpenSky direct
 
     let data;
     try {
